@@ -12,5 +12,5 @@
 - Once the application is ended, program will print the total time elapsed for each activity
 
 ### Future improvements
-- Currently, the program only works on one activity at a time, so adding the ability to start more than one activity (multi-tasking) is a goal
+- Add TKinter GUI for an easier look to program is one goal
 - Manually creating entries can get annoying, so making the program automatic is also a goal
