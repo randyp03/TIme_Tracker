@@ -29,7 +29,7 @@ def get_total_time():
     data = json.load(f)
     f.close()
 
-    print('Total Alloted per Activity')
+    print('Time Elapsed per Activity')
 
     # prints the name of each activity and
     # subtracts the start and end time to get total time spent
@@ -50,51 +50,72 @@ def get_total_time():
 
         print(f"{activity['name']}: {td}")
 
+# function gets list of all activities in json file
+def get_activity_list(filename='time_data.json'):
+    file = open(filename, 'r+')
+    # First we load existing data into a dict.
+    file_data = json.load(file)
+    # gets all activities already entered
+    activity_list=[]
+    for activity in file_data["activities"]:
+    	activity_list.append((activity["name"]))
+    
+    return activity_list
+
+
+
 
 def main():
-    # loop asks for activities to add/end time for 
+
+    activity_list = get_activity_list()
+    object_dict = {} # creates dictionary to allow control over two or more activties at once
+    action, activity = get_input()
+
     while True:
-        action, activity = get_input()
-        new_object = entry_class.entry(activity) # creates a new activity object
+        
+        if action == 'add':
+            # checks if this is a new activity or not
+            if activity not in activity_list:
+                print('New activity started')
+                object_dict[activity] = entry_class.entry(activity) # creates a new activity object
+                object_dict[activity].start_time = get_now() # gets start time for new activity
 
-        while not action.startswith('quit'): # if user wants to end application,
-                                             # enter 'quit app'
+            elif activity in activity_list:
+                object_dict[activity].start_time = get_now() # starts a new time for an old activity
 
-            if action == 'add': # gets start time
-                new_object.start_time = get_now()
-            elif action == 'end': # gets end time
-                new_object.end_time = get_now()
+        elif action == 'end': # gets end time
+            object_dict[activity].end_time = get_now()
 
-            action, activity = get_input() # wait for new input
-        break
-
-
-    print(f'Activity: {new_object.get_activity()}\nStart Time: {new_object.get_start_time()}\nEnd Time: {new_object.get_end_time()}\n')
-
-
-    # json format to enter into file
-    y = {
-        'name':'%s' %(new_object.activity),
-        'time entries':[
-            {
-                'start':'%s' %(new_object.start_time),
-                'end':'%s' %(new_object.end_time)
+            # json format to enter into file
+            y = {
+                'name':'%s' %(object_dict[activity].activity),
+                'time entries':[
+                    {
+                        'start':'%s' %(object_dict[activity].start_time),
+                        'end':'%s' %(object_dict[activity].end_time)
+                    }
+                ]
             }
-        ]
-    }
 
-    # calls new_entry fucntion to add a new time entry
-    activities.new_entry(y)
+            # calls add_entry_data fucntion to add a new time entry
+            activities.add_entry_data(y, activity_list)
+
+        # in case user needs to know list of already used activities
+        elif action == 'get' and activity == 'list':
+            print('Activities on file:', activity_list)
+            print('Activities currently in use:', list(object_dict.keys()))
+        
+        elif action == 'quit':
+            break
+        else:
+            print('Invalid action, please restart program')
+            break
+
+        action, activity = get_input() # wait for new input
 
     # calls function to get total time elasped for each activity
+    print()
     get_total_time()
 
+# calls main function
 main()
-
-
-
-
-
-
-
-
