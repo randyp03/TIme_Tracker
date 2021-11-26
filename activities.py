@@ -1,14 +1,9 @@
 import json
 
-def new_entry(new_data, filename='time_data.json'):
+def add_entry_data(new_data, activity_list, filename='time_data.json'):
 	file = open(filename, 'r+')
 	# First we load existing data into a dict.
 	file_data = json.load(file)
-	
-    # gets all activities already entered
-	activity_list=[]
-	for activity in file_data["activities"]:
-		activity_list.append((activity["name"]))
 
 	# if activity is not in list, add new activity to json file    
 	if new_data["name"] not in activity_list:
@@ -30,6 +25,4 @@ def new_entry(new_data, filename='time_data.json'):
 		file_data["activities"][index]["time entries"].append(temp_dict)
 
 	# convert back to json.
-	json.dump(file_data, file, indent = 2)
-
-		
+	json.dump(file_data, file, indent = 2)	
