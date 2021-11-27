@@ -73,7 +73,7 @@ def main():
 
     while True:
         
-        if action == 'add':
+        if action == 'start':
             # checks if this is a new activity or not
             if activity not in activity_list:
                 print('New activity started')
