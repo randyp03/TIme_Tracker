@@ -4,13 +4,16 @@
 
 ### Main program functions
 
-- Run the main.py file and it will ask to add or end an activity
-- "start {{activity}}" will get the start time for the activity
-- "end {{activity}}" will get the end time for the activity
-- Program will not add activity to json file until user enters "end {{activity}}"
-- User can choose to quit the program by typing 'quit app' instead
-- Once the application is ended, program will print the total time elapsed for each activity
+- User will be prompted to input available commands:
+    - start {activity}
+    - end {activity}
+    - quit app
+
+- Program will not add activity to json file until user ends said activity
+- Users cannot start two activities simultaneously. Must end current activity before starting another.
+- Once the activity is ended, program will record the total time elapsed for each activity logged
 
 ### Future improvements
+- Summary feature: Get averages, longest activity, most often activity, etc.
+- Data visualization
 - Add TKinter GUI for an easier look to program is one goal
-- Manually creating entries can get annoying, so making the program automatic is also a goal

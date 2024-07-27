@@ -1,121 +1,109 @@
-import datetime as dt
+import entries
 import json
-import activities
-import entry_class
 
-# get time elapsed in seconds
-def get_seconds(time):
-    a_timedelta = time - dt.datetime(1900,1,1)
-    sec = a_timedelta.total_seconds()
-    return sec
+COMMANDS = ["start (activity)", "end (activity)", "quit app"]
 
-# gets the current time
-def get_now():
-    now = dt.datetime.now().strftime("%H:%M:%S")
-    return now
+class DATA:
+    JSON_FILE = "activities.json"
+    JSON_TEMPLATE = {'activities': []}
 
-# asks user to input activity and whether to start/end time for activity
-# or quit to exit application altogether
+    # intializes the json file
+    @classmethod
+    def initialize_json(cls):
+        try:
+            with open(cls.JSON_FILE, 'r') as file:
+                contents = json.load(file)
+            return contents
+        
+        except FileNotFoundError:
+            with open(cls.JSON_FILE, 'w') as file:
+                json.dump(cls.JSON_TEMPLATE, file, indent=4)
+            return cls.initialize_json()
+
+    # adds current activity information to the json file
+    @classmethod
+    def add_activity(cls, contents, activity_obj):
+        # json template for a new activity
+        x = {
+            "activity_name": activity_obj.activity,
+            "start": [activity_obj.start],
+            "end": [activity_obj.end],
+            "time_elapsed": [activity_obj.time_elapsed]
+        }
+
+        activity_list = [activity['activity_name'] for activity in contents['activities']]
+        # checks if the current activity had been logged before
+        if activity_obj.activity in activity_list:
+            # adds the times to the already created activity
+            index = activity_list.index(activity_obj.activity)
+            contents['activities'][index]['start'].append(activity_obj.start)
+            contents['activities'][index]['end'].append(activity_obj.end)
+            contents['activities'][index]['time_elapsed'].append(activity_obj.time_elapsed)
+        else:
+            # appends a new activity to the contents dict
+            contents['activities'].append(x)
+
+        with open(cls.JSON_FILE, 'w') as file:
+            json.dump(contents, file, indent=4)
+
+    # Coming soon
+    @classmethod
+    def get_summary(cls):
+        pass
+
+# Returns desired command and activity
 def get_input():
-    action, activity = input('Enter action (add/end) and corresponding activity, or "quit app" to exit: ').split(' ')
-    action = action.strip()
-    activity = activity.strip()
-    return action, activity
-
-# gets total time elapsed
-def get_total_time():
-    # opens json file and loads it into json module
-    f = open("time_data.json", "r")
-    data = json.load(f)
-    f.close()
-
-    print('Time Elapsed per Activity')
-
-    # prints the name of each activity and
-    # subtracts the start and end time to get total time spent
-    for activity in data['activities']:
-        total_time = 0
-        for entry in activity['time entries']:
-            start_time = dt.datetime.strptime(entry['start'], '%H:%M:%S')
-            start_sec = get_seconds(start_time)
-
-            end_time = dt.datetime.strptime(entry['end'], '%H:%M:%S')
-            end_sec = get_seconds(end_time)
-
-            sec_diff = end_sec - start_sec
-
-            total_time += sec_diff
-
-            td = dt.timedelta(seconds=total_time)
-
-        print(f"{activity['name']}: {td}")
-
-# function gets list of all activities in json file
-def get_activity_list(filename='time_data.json'):
-    file = open(filename, 'r+')
-    # First we load existing data into a dict.
-    file_data = json.load(file)
-    # gets all activities already entered
-    activity_list=[]
-    for activity in file_data["activities"]:
-    	activity_list.append((activity["name"]))
-    
-    return activity_list
-
-
+    try:
+        print('\nEnter command:')
+        command, activity = input().lower().split(' ')
+        # checks if user entered possible options
+        if command not in ('start','end') and (command + activity) != 'quitapp': 
+            raise ValueError
+        else:
+            return command, activity
+    except ValueError:
+        print('Invalid input. Please enter start/end and the activity (Ex. start work)')
+        return get_input()
 
 
 def main():
+    # initialize json file
+    contents = DATA.initialize_json()
 
-    activity_list = get_activity_list()
-    object_dict = {} # creates dictionary to allow control over two or more activties at once
-    action, activity = get_input()
+    # display available commands
+    print(f"{'*' * 15} Commands {'*' * 15}")
+    for i in range(len(COMMANDS)):
+        print(f'{i + 1}: {COMMANDS[i]}')
 
+    activity_obj = None
+    
     while True:
-        
-        if action == 'start':
-            # checks if this is a new activity or not
-            if activity not in activity_list:
-                print('New activity started')
-                object_dict[activity] = entry_class.entry(activity) # creates a new activity object
-                object_dict[activity].start_time = get_now() # gets start time for new activity
+        # gets user commands
+        command, activity = get_input()
 
-            elif activity in activity_list:
-                object_dict[activity].start_time = get_now() # starts a new time for an old activity
-
-        elif action == 'end': # gets end time
-            object_dict[activity].end_time = get_now()
-
-            # json format to enter into file
-            y = {
-                'name':'%s' %(object_dict[activity].activity),
-                'time entries':[
-                    {
-                        'start':'%s' %(object_dict[activity].start_time),
-                        'end':'%s' %(object_dict[activity].end_time)
-                    }
-                ]
-            }
-
-            # calls add_entry_data fucntion to add a new time entry
-            activities.add_entry_data(y, activity_list)
-
-        # in case user needs to know list of already used activities
-        elif action == 'get' and activity == 'list':
-            print('Activities on file:', activity_list)
-            print('Activities currently in use:', list(object_dict.keys()))
-        
-        elif action == 'quit':
-            break
+        if command == 'start':
+            # users cannot start two tasks simultaneously,
+            # so it checks if there is an activity already started
+            if activity_obj is not None:
+                print('You must end an activity before starting another.')
+            else:
+                activity_obj = entries.entries(activity=activity)
+                activity_obj.start_activity()
+        elif command == 'end':
+            # users cannot end a task that hasn't been started,
+            # so it checks if there is an activity in use and if activity names match
+            if activity_obj is None or activity_obj.activity != activity:
+                print('Cannot end an activity that hasn\'t started')
+            else:
+                activity_obj.end_activity()
+                DATA.add_activity(contents=contents, activity_obj=activity_obj)
+                print('\nActivity Logged')
+                # reinitialize object to start next activity
+                activity_obj = None
+        # if user chooses to quit the program
         else:
-            print('Invalid action, please restart program')
             break
 
-        action, activity = get_input() # wait for new input
 
-    # calls function to get total time elasped for each activity
-    print()
-    get_total_time()
-
-# calls main function
-main()
+if __name__ == "__main__":
+    main()
