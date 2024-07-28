@@ -1,7 +1,7 @@
 import entries
 import json
 
-COMMANDS = ["start (activity)", "end (activity)", "quit app"]
+COMMANDS = ["start (activity)", "end (activity)", "get summary", "quit app"]
 
 class DATA:
     JSON_FILE = "activities.json"
@@ -48,8 +48,41 @@ class DATA:
 
     # Coming soon
     @classmethod
-    def get_summary(cls):
-        pass
+    def get_summary(cls, contents):        
+        choices = ['All Activities', 'Each Acvitity']
+        num_activities = len(contents['activities'])
+        if num_activities == 0:
+            print('\nNo activities are logged.') 
+            print('Please log an activity if you wish to view a summary')
+            return
+        
+        try:
+            print('\nFor which would you like a summary for?')
+            for i in range(len(choices)):
+                print(f'{i +1} - {choices[i]}')
+
+            choice = int(input()) - 1
+
+            if 0 <= choice < len(choices):
+                # return total activities logged in json and average time elapsed for all activities
+                if choice == 0:
+                    avg_elapsed_time = sum([sum(activity['time_elapsed'])
+                                            for activity 
+                                            in contents['activities']]) / num_activities
+                    print(f'\n{"*"*15} All Activities Summary {"*"*15}')
+                    print(f'Total Activities: {num_activities}')
+                    print(f'Average Time Elapsed: {round(avg_elapsed_time,2)} seconds')
+                # return each activity, how many times they logged, and their average time elapsed
+                elif choice == 1:
+                    print(f'\n{"*"*15} Each Activity Summary {"*"*15}')
+                    print('{:^15} - {:^25}'.format('Activities', 'Average Time (seconds)'))
+                    for activity in contents['activities']:
+                        print("{:^15} - {:^25}".format(activity['activity_name'],
+                                                           sum(activity['time_elapsed'])/len(activity['time_elapsed'])))
+            else: raise ValueError()
+        except ValueError:
+            print('Invalid input. Please enter a choice number.')
+            cls.get_summary(contents=contents)
 
 # Returns desired command and activity
 def get_input():
@@ -57,12 +90,12 @@ def get_input():
         print('\nEnter command:')
         command, activity = input().lower().split(' ')
         # checks if user entered possible options
-        if command not in ('start','end') and (command + activity) != 'quitapp': 
+        if command not in ('start','end') and (command + activity) not in ('quitapp', 'getsummary'): 
             raise ValueError
         else:
             return command, activity
     except ValueError:
-        print('Invalid input. Please enter start/end and the activity (Ex. start work)')
+        print('Invalid input. Please enter a valid command (Ex. start work).')
         return get_input()
 
 
@@ -87,12 +120,12 @@ def main():
             if activity_obj is not None:
                 print('You must end an activity before starting another.')
             else:
-                activity_obj = entries.entries(activity=activity)
+                activity_obj = entries.entries(activity=activity.capitalize())
                 activity_obj.start_activity()
         elif command == 'end':
             # users cannot end a task that hasn't been started,
             # so it checks if there is an activity in use and if activity names match
-            if activity_obj is None or activity_obj.activity != activity:
+            if activity_obj is None or activity_obj.activity != activity.capitalize():
                 print('Cannot end an activity that hasn\'t started')
             else:
                 activity_obj.end_activity()
@@ -100,6 +133,8 @@ def main():
                 print('\nActivity Logged')
                 # reinitialize object to start next activity
                 activity_obj = None
+        elif command == 'get':
+            DATA.get_summary(contents=contents)
         # if user chooses to quit the program
         else:
             break
